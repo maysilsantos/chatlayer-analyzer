@@ -9,22 +9,22 @@ export async function GET() {
     await new Promise((resolve) => setTimeout(resolve, 2000))
 
     const analysisResult = `
-      ## Análise da Conversa
+    ## Conversation Analysis
 
-      ### Pontos Fortes:
-      - O bot respondeu rapidamente à solicitação do usuário
-      - A piada foi entregue de forma clara e estruturada
-      - O tom da conversa foi amigável e engajador
+      ### Strengths:
+      - The bot responded quickly to the user's request
+      - The joke was delivered clearly and with structure
+      - The tone of the conversation was friendly and engaging
 
-      ### Áreas para Melhoria:
-      - O bot poderia perguntar se o usuário gostou da piada
-      - Poderia oferecer contar outra piada ou mudar de assunto
-      - Adicionar mais personalidade às respostas
+      ### Areas for Improvement:
+      - The bot could ask if the user liked the joke
+      - It could offer to tell another joke or change the subject
+      - Add more personality to the responses
 
-      ### Recomendações:
-      1. Implementar follow-up questions após contar piadas
-      2. Adicionar mais variedade ao repertório de piadas
-      3. Personalizar as respostas com base no histórico do usuário
+      ### Recommendations:
+      1. Implement follow-up questions after telling jokes
+      2. Add more variety to the joke repertoire
+      3. Personalize responses based on the user's history
     `
 
     return NextResponse.json({

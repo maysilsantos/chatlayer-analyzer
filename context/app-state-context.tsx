@@ -55,16 +55,17 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const startAnalysis = async () => {
     // Validar campos obrigatórios
     if (!state.botId || !state.token || !state.endpoint) {
-      toast.error("Por favor, preencha todos os campos de credenciais")
+      toast.error("Please fill in all credential fields")
       return
     }
 
     try {
-      // Atualizar estado para processamento
+      // MODIFICAÇÃO AQUI: Limpar explicitamente o histórico de conversas
+      // Atualizar estado para processamento e limpar conversas anteriores
       updateState({
         stage: "processing",
         isLoading: true,
-        conversation: [],
+        conversation: [], // Garantir que o histórico está vazio
         analysisResult: "",
       })
 
@@ -84,10 +85,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       })
 
       if (!response.ok) {
-        throw new Error("Falha ao iniciar análise")
+        throw new Error("Failed to start analysis")
       }
 
-      toast.success("Análise iniciada com sucesso")
+      toast.success("Analysis started successfully!")
 
       // Iniciar polling para obter atualizações da conversa
       startConversationPolling()
@@ -103,9 +104,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   }
 
   const startConversationPolling = () => {
-    // Simulação de polling para obter atualizações da conversa
-    // Em um cenário real, você usaria SSE, WebSockets ou polling real
-
+    // MODIFICAÇÃO AQUI: Criar uma nova variável local para armazenar as mensagens
+    // para evitar problemas de closure com o estado anterior
+    const newConversation: Message[] = []
+    
     // Exemplo de conversa simulada
     const mockConversation: Message[] = [
       { actor: "bot", text: "How can I help you today?" },
@@ -120,9 +122,14 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     // Adicionar mensagens gradualmente para simular recebimento em tempo real
     const intervalId = setInterval(() => {
       if (index < mockConversation.length) {
+        // Adicionar a nova mensagem ao array local
+        newConversation.push(mockConversation[index])
+        
+        // Atualizar o estado com o array completo de mensagens até agora
         updateState({
-          conversation: [...state.conversation, mockConversation[index]],
+          conversation: [...newConversation],
         })
+        
         index++
       } else {
         // Quando todas as mensagens forem adicionadas, finalizar a análise
@@ -140,7 +147,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       })
 
       if (!response.ok) {
-        throw new Error("Falha ao obter resultado da análise")
+        throw new Error("Failure to obtain analysis results")
       }
 
       const data = await response.json()
@@ -152,28 +159,28 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         analysisResult: data.result,
       })
 
-      toast.success("Análise concluída com sucesso!")
+      toast.success("Analysis started successfully!")
     } catch (error) {
-      console.error("Erro ao obter resultado da análise:", error)
-      toast.error("Erro ao obter resultado da análise")
+      console.error("Error obtaining analysis result:", error)
+      toast.error("Error obtaining analysis result")
       updateState({
         stage: "finished",
         isLoading: false,
-        analysisResult: "Erro ao obter resultado da análise. Por favor, tente novamente.",
+        analysisResult: "Error obtaining analysis result. Please try again.",
       })
     }
   }
 
   const resetAnalysis = () => {
-    // Manter as credenciais e descrições, mas resetar o resto
+    // MODIFICAÇÃO AQUI: Garantir que o histórico de conversas seja limpo
     setState((prev) => ({
       ...prev,
       stage: "initial",
-      conversation: [],
+      conversation: [], // Limpar explicitamente o histórico
       analysisResult: "",
       isLoading: false,
     }))
-    toast("Análise reiniciada")
+    toast("Analysis restarted")
   }
 
   return (

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { Check, Loader2, Bot, MessageSquare, Infinity } from "lucide-react"
+import { Check, Loader2, Bot, MessageSquare, Infinity } from 'lucide-react'
 import ConversationPreview from "@/components/conversation-preview"
 import AnalysisResult from "@/components/analysis-result"
 
@@ -14,10 +14,15 @@ export default function ChatlayerAnalyzer() {
   const { state, updateState, startAnalysis, resetAnalysis } = useAppState()
 
   const handleStartAnalysis = async () => {
+    // MODIFICAÇÃO AQUI: Limpar explicitamente o histórico de conversas antes de iniciar
     if (state.stage === "finished") {
       resetAnalysis()
       await new Promise((resolve) => setTimeout(resolve, 500)) // Pequeno delay para efeito visual
+    } else {
+      // Mesmo se não estiver no estágio "finished", limpar o histórico
+      updateState({ conversation: [] })
     }
+    
     startAnalysis()
   }
 
