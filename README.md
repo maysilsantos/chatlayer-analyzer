@@ -1,80 +1,79 @@
 # Chatlayer Analyzer
 
-Projeto desenvolvido com Next.js, Tailwind CSS e shadcn/ui para análise de conversas na Chatlayer.
+A web application built with **Next.js**, **Tailwind CSS**, and **shadcn/ui** to visualize and analyze conversations from **Chatlayer**.
+
+🔗 **Live version:** [chatlayer-analyzer.vercel.app](https://chatlayer-analyzer.vercel.app/)
 
 ---
 
-## 🧭 Guia Completo: Criando o Chatlayer Analyzer do Zero
+## 🚀 Getting Started
 
-Vamos criar um novo projeto do zero, seguindo cada passo cuidadosamente para garantir que tudo funcione corretamente.
+Follow these steps to create and run the project from scratch.
 
----
-
-## ⚙️ Parte 1: Configuração Inicial do Projeto
-
-### ✅ Passo 1: Criar um Novo Projeto Next.js
+### 1. Create a New Next.js App
 
 ```bash
-npx create-next-app@latest chatlayer-analyzer-new --typescript --eslint --tailwind --app --use-npm
+npx create-next-app@latest chatlayer-analyzer --typescript --eslint --tailwind --app --use-npm
 ```
 
-Responda às perguntas da CLI da seguinte forma:
+```bash
+CLI answers:
 
-```text
 TypeScript: Yes
+
 ESLint: Yes
+
 Tailwind CSS: Yes
+
 src/ directory: No
+
 App Router: Yes
-Import alias: Yes (padrão: @/*)
+
+Import alias: Yes (@/*)
 ```
-
----
-
-### 📁 Passo 2: Navegar para o Diretório do Projeto
+### 2. Navigate to the Project
 
 ```bash
-cd chatlayer-analyzer-new
+cd chatlayer-analyzer
 ```
 
----
 
-### 📦 Passo 3: Instalar Dependências Adicionais
-
+### 3. Install Required Dependencies
 ```bash
-# Garantir que estamos usando React 18
+# Ensure React 18
 npm install react@18.2.0 react-dom@18.2.0
 
-# Instalar pacotes auxiliares e do shadcn/ui
+# Install UI libraries and utilities
 npm install next-themes sonner @radix-ui/react-label @radix-ui/react-slot \
 class-variance-authority clsx lucide-react tailwind-merge tailwindcss-animate
+
 ```
 
----
-
-### ⚙️ Passo 4: Inicializar o shadcn/ui
-
+### 4. Initialize shadcn/ui
 ```bash
 npx shadcn@latest init
+
 ```
+Recommended options:
 
-Durante a configuração, selecione:
-
-```text
 Style: Default
-Base color: Slate (ou outro de sua preferência)
-Global CSS: app/globals.css
-CSS variables: Yes
-Radius: 0.5rem
+
+Base color: Slate
+
+Global CSS path: app/globals.css
+
+Use CSS variables: Yes
+
+Border radius: 0.5rem
+
 React Server Components: Yes
+
 Tailwind CSS: Yes
-Outras configurações: padrão
-```
 
----
+Other options: Default
 
-### 🧱 Passo 5: Instalar Componentes shadcn/ui
 
+### 5. Add UI Components
 ```bash
 npx shadcn@latest add button
 npx shadcn@latest add input
@@ -82,53 +81,21 @@ npx shadcn@latest add textarea
 npx shadcn@latest add card
 npx shadcn@latest add label
 npx shadcn@latest add sonner
+
 ```
 
----
-
-## 🗂️ Parte 2: Substituir Arquivos e Corrigir Dependências
-
-### 📥 Substituir arquivos pelo zip modificado
-
-Após baixar e descompactar os arquivos modificados, sobrescreva os arquivos do projeto `chatlayer-analyzer-new`.
-
----
-
-### 🔁 Reinstalar e Corrigir Dependências
-
-```bash
-# Limpar build anterior
-rm -rf .next
-
-# Remover node_modules e reinstalar tudo
-rm -rf node_modules
-npm install
-
-# Garantir que dependências essenciais estejam presentes
-npm install @radix-ui/react-label @radix-ui/react-slot \
-class-variance-authority clsx lucide-react tailwind-merge \
-tailwindcss-animate next-themes sonner
-```
-
----
-
-### 🛠️ Corrigir o PostCSS e Tailwind
-
-```bash
-# Criar o arquivo se não existir
-touch postcss.config.js
-
-# Instalar plugin de desenvolvimento necessário
-npm install --save-dev @tailwindcss/postcss
-```
-
----
-
-## 🚀 Executar o Projeto
-
+## 🧪 Development
+### To run the application locally:
 ```bash
 npm run dev
-```
 
-Acesse em:  
-[http://localhost:3000](http://localhost:3000)
+```
+Then open your browser at:
+http://localhost:3000
+
+## 📦 Build for Production
+```bash
+npm run build
+npm start
+
+```
