@@ -199,7 +199,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     if (!state.conversationId) return
 
     try {
-      console.log(`Fetching updates for conversation: ${state.conversationId}`)
+      console.log(`Fetching updates for conversation: ${state.conversationId} `)
 
       // Adicionar um parâmetro de timestamp para evitar cache
       const timestamp = Date.now()
