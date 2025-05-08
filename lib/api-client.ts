@@ -1,5 +1,3 @@
-// Cliente de API para fazer chamadas ao backend
-
 export async function submitFormData(data: { name: string; email: string }) {
   try {
     const response = await fetch("/api/submit", {

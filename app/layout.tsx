@@ -10,7 +10,6 @@ const inter = Inter({ subsets: ["latin"] })
 export const metadata: Metadata = {
   title: "Chatlayer Analyzer",
   description: "Analyze bot conversations and get improvement suggestions",
-    generator: 'v0.dev'
 }
 
 export default function RootLayout({

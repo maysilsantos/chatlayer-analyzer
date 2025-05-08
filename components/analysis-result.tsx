@@ -22,6 +22,12 @@ export default function AnalysisResult({ stage, result }: AnalysisResultProps) {
         </div>
       )}
 
+      {stage === "error" && (
+        <div className="h-full flex items-center justify-center text-red-500">
+          <span className="flex items-center">❌ {result || "Erro na análise da conversa"}</span>
+        </div>
+      )}
+
       {stage === "finished" && result && <div className="text-gray-800">{result}</div>}
     </div>
   )

@@ -1,35 +1,112 @@
 "use client"
 
 import { useAppState } from "@/context/app-state-context"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { Check, Loader2, Bot, MessageSquare, Infinity } from 'lucide-react'
+import { Check, Loader2, Bot, MessageSquare, Infinity, RefreshCw, Clock, AlertTriangle } from "lucide-react"
 import ConversationPreview from "@/components/conversation-preview"
 import AnalysisResult from "@/components/analysis-result"
+import UserToneSelector from "@/components/user-tone-selector"
+import { useState, useEffect } from "react"
 
 export default function ChatlayerAnalyzer() {
-  const { state, updateState, startAnalysis, resetAnalysis } = useAppState()
+  const { state, updateState, startAnalysis, resetAnalysis, fetchConversationUpdates, submitAnalysisResult } =
+    useAppState()
+  const [expirationInfo, setExpirationInfo] = useState<string | null>(null)
 
   const handleStartAnalysis = async () => {
-    // MODIFICAÇÃO AQUI: Limpar explicitamente o histórico de conversas antes de iniciar
-    if (state.stage === "finished") {
+    // Limpar explicitamente o histórico de conversas antes de iniciar
+    if (state.stage === "finished" || state.stage === "error") {
       resetAnalysis()
       await new Promise((resolve) => setTimeout(resolve, 500)) // Pequeno delay para efeito visual
     } else {
       // Mesmo se não estiver no estágio "finished", limpar o histórico
       updateState({ conversation: [] })
     }
-    
+
     startAnalysis()
   }
+
+  // Função para simular o envio de um resultado de análise
+  const handleSimulateAnalysisResult = async () => {
+    try {
+      const response = await fetch("/api/get-analysis-result", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          conversationId: state.conversationId,
+          result: `
+## Análise Simulada da Conversa
+
+### Pontos Fortes:
+- Resposta rápida às solicitações do usuário
+- Opções claras de agendamento
+- Confirmação visual com mapa
+
+### Áreas para Melhoria:
+- Poderia oferecer mais detalhes sobre os serviços
+- Faltou perguntar sobre o tipo de bicicleta
+- Não ofereceu opções de cancelamento
+
+### Recomendações:
+1. Adicionar mais detalhes sobre os serviços disponíveis
+2. Perguntar sobre o tipo/modelo da bicicleta
+3. Oferecer política de cancelamento
+          `,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Falha ao enviar resultado da análise")
+      }
+
+      const data = await response.json()
+      submitAnalysisResult(data.result)
+    } catch (error) {
+      console.error("Erro ao simular resultado da análise:", error)
+    }
+  }
+
+  // Função para obter informações sobre a expiração
+  const fetchExpirationInfo = async () => {
+    try {
+      const response = await fetch("/api/conversation-updates", {
+        method: "OPTIONS",
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setExpirationInfo(`Conversas expiram após ${data.expirationTimeHours} horas de inatividade`)
+      }
+    } catch (error) {
+      console.error("Erro ao buscar informações de expiração:", error)
+    }
+  }
+
+  // Buscar informações de expiração ao carregar o componente
+  useEffect(() => {
+    fetchExpirationInfo()
+  }, [])
 
   return (
     <div className="container mx-auto py-6">
       <header className="mb-6 text-center">
         <h1 className="text-2xl font-bold">QA Test Bot</h1>
+        <p className="text-sm text-muted-foreground">Conversation ID: {state.conversationId}</p>
+        <p className="text-xs text-muted-foreground">
+          Last updated: {new Date(state.lastUpdated).toLocaleTimeString()}
+        </p>
+        {expirationInfo && (
+          <p className="text-xs text-muted-foreground mt-1 flex items-center justify-center">
+            <Clock className="h-3 w-3 mr-1" />
+            {expirationInfo}
+          </p>
+        )}
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -109,11 +186,66 @@ export default function ChatlayerAnalyzer() {
             </CardContent>
           </Card>
 
+          {/* Seletor de tom do usuário */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">User Tone</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <UserToneSelector />
+            </CardContent>
+          </Card>
+
+          {/* Campo para Goal */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Conversation Goal</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <Label htmlFor="goal">Goal</Label>
+                <Input
+                  id="goal"
+                  value={state.goal}
+                  onChange={(e) => updateState({ goal: e.target.value })}
+                  placeholder="Enter the goal of this test scenario"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Campo para Intents */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Bot Intents</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <Label htmlFor="intents">Intents (comma separated)</Label>
+                <Textarea
+                  id="intents"
+                  value={state.intents}
+                  onChange={(e) => updateState({ intents: e.target.value })}
+                  placeholder="Enter intents separated by commas (e.g., book_checkup, show_all_models, track_order)"
+                  className="min-h-[80px]"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Botão de análise e indicador de status */}
           <div className="flex flex-col items-center space-y-4">
-            <Button onClick={handleStartAnalysis} size="lg" className="bg-teal-600 hover:bg-teal-700">
-              Start bot analysis
-            </Button>
+            <div className="flex space-x-4">
+              <Button onClick={handleStartAnalysis} size="lg" className="bg-teal-600 hover:bg-teal-700">
+                Start bot analysis
+              </Button>
+
+              {state.stage === "processing" && (
+                <Button onClick={handleSimulateAnalysisResult} variant="outline" size="lg">
+                  Simular Resultado
+                </Button>
+              )}
+            </div>
 
             <div className="h-10 flex items-center justify-center">
               {state.stage === "processing" && state.isLoading && (
@@ -124,6 +256,11 @@ export default function ChatlayerAnalyzer() {
                   <Check className="h-8 w-8 text-white" />
                 </div>
               )}
+              {state.stage === "error" && (
+                <div className="bg-red-500 rounded-full p-1">
+                  <AlertTriangle className="h-8 w-8 text-white" />
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -132,12 +269,19 @@ export default function ChatlayerAnalyzer() {
         <div className="space-y-6">
           {/* Preview da conversa */}
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-lg">Conversation Interaction Preview</CardTitle>
+              <Button variant="outline" size="sm" onClick={() => fetchConversationUpdates()} className="h-8 px-2">
+                <RefreshCw className="h-4 w-4 mr-1" />
+                Refresh
+              </Button>
             </CardHeader>
             <CardContent>
               <ConversationPreview conversation={state.conversation} />
             </CardContent>
+            <CardFooter className="text-xs text-muted-foreground">
+              {state.conversation.length} messages • Last updated: {new Date(state.lastUpdated).toLocaleTimeString()}
+            </CardFooter>
           </Card>
 
           {/* Resultado da análise */}
