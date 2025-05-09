@@ -62,7 +62,7 @@ export default function ConversationPreview({ conversation }: ConversationPrevie
                   <div className="mt-2 rounded-md overflow-hidden">
                     <Image
                       src={message.imageUrl || "/placeholder.svg"}
-                      alt="Message attachment"
+                      alt="Bike image"
                       width={250}
                       height={150}
                       className="object-cover"

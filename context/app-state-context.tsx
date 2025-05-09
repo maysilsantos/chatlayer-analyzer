@@ -79,9 +79,22 @@ const AppStateContext = createContext<AppStateContextType | undefined>(undefined
 // Função auxiliar para verificar se uma resposta é JSON
 async function safeParseJSON(response: Response) {
   const contentType = response.headers.get("content-type")
+
+  // Log para depuração
+  console.log("Response content type:", contentType)
+
   if (!contentType || !contentType.includes("application/json")) {
     console.error(`Expected JSON response but got ${contentType}`)
-    // Retornar um objeto vazio ou array vazio dependendo do contexto
+
+    // Tentar obter o texto da resposta para depuração
+    try {
+      const text = await response.text()
+      console.error("Response text:", text.substring(0, 200) + (text.length > 200 ? "..." : ""))
+    } catch (e) {
+      console.error("Could not read response text:", e)
+    }
+
+    // Retornar um array vazio como fallback
     return []
   }
 
@@ -116,6 +129,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
             "Cache-Control": "no-cache, no-store, must-revalidate",
             Pragma: "no-cache",
             Expires: "0",
+            Accept: "application/json",
           },
         },
       )
@@ -209,6 +223,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           "Cache-Control": "no-cache, no-store, must-revalidate",
           Pragma: "no-cache",
           Expires: "0",
+          Accept: "application/json",
         },
       })
 
@@ -443,6 +458,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       try {
         await fetch(`/api/conversation-updates?conversationId=${currentConversationId}`, {
           method: "DELETE",
+          headers: {
+            Accept: "application/json",
+          },
         })
       } catch (error) {
         console.error("Error clearing conversation:", error)
@@ -494,6 +512,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Accept: "application/json",
         },
         body: JSON.stringify(requestBody),
       })

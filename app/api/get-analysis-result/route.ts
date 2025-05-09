@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server"
 import { updateAnalysisResult } from "../conversation-updates/route"
+import { getMockAnalysisResult } from "@/lib/mock-conversation"
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     // Garantir que o cabeçalho Content-Type seja definido como application/json
     const headers = new Headers({
@@ -12,50 +13,43 @@ export async function GET() {
       Expires: "0",
     })
 
-    // Em um cenário real, você buscaria o resultado da análise do serviço Chatlayer
-    // Aqui estamos apenas simulando uma resposta
+    // Obter o conversationId da URL, se fornecido
+    const url = new URL(request.url)
+    const conversationId = url.searchParams.get("conversationId")
 
     // Simular um pequeno atraso
     await new Promise((resolve) => setTimeout(resolve, 2000))
 
-    const analysisResult = `
-      ## Análise da Conversa
+    // Usar o resultado de análise mockado
+    const analysisResult = getMockAnalysisResult()
 
-      ### Pontos Fortes:
-      - O bot respondeu rapidamente à solicitação do usuário
-      - A piada foi entregue de forma clara e estruturada
-      - O tom da conversa foi amigável e engajador
+    // Se um conversationId foi fornecido, atualizar o resultado da análise
+    if (conversationId) {
+      updateAnalysisResult(conversationId, analysisResult)
+    }
 
-      ### Áreas para Melhoria:
-      - O bot poderia perguntar se o usuário gostou da piada
-      - Poderia oferecer contar outra piada ou mudar de assunto
-      - Adicionar mais personalidade às respostas
-
-      ### Recomendações:
-      1. Implementar follow-up questions após contar piadas
-      2. Adicionar mais variedade ao repertório de piadas
-      3. Personalizar as respostas com base no histórico do usuário
-    `
-
-    return new NextResponse(
-      JSON.stringify({
+    return NextResponse.json(
+      {
         success: true,
         result: analysisResult,
-      }),
+      },
       { headers },
     )
   } catch (error) {
     console.error("Erro ao obter resultado da análise:", error)
     // Garantir que mesmo em caso de erro, retornamos JSON
-    return new NextResponse(JSON.stringify({ error: "Erro interno do servidor" }), {
-      status: 500,
-      headers: {
-        "Content-Type": "application/json",
-        "Cache-Control": "no-cache, no-store, must-revalidate",
-        Pragma: "no-cache",
-        Expires: "0",
+    return NextResponse.json(
+      { error: "Erro interno do servidor" },
+      {
+        status: 500,
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
       },
-    })
+    )
   }
 }
 
@@ -74,54 +68,37 @@ export async function POST(request: Request) {
 
     // Validar os dados
     if (!data.conversationId) {
-      return new NextResponse(JSON.stringify({ error: "conversationId é obrigatório" }), { status: 400, headers })
+      return NextResponse.json({ error: "conversationId é obrigatório" }, { status: 400, headers })
     }
 
-    // Se o resultado da análise foi fornecido, use-o
-    // Caso contrário, gere um resultado padrão
-    const analysisResult =
-      data.result ||
-      `
-      ## Análise da Conversa para ${data.conversationId}
-
-      ### Pontos Fortes:
-      - O bot respondeu rapidamente à solicitação do usuário
-      - As opções de agendamento foram apresentadas de forma clara
-      - O tom da conversa foi profissional e eficiente
-
-      ### Áreas para Melhoria:
-      - O bot poderia oferecer mais detalhes sobre os serviços de checkup
-      - Poderia confirmar os detalhes do agendamento no final
-      - Adicionar opção para receber um lembrete antes do agendamento
-
-      ### Recomendações:
-      1. Implementar confirmação final do agendamento
-      2. Adicionar mais informações sobre os serviços disponíveis
-      3. Oferecer opção de cancelamento ou reagendamento
-    `
+    // Usar o resultado de análise mockado
+    const analysisResult = getMockAnalysisResult()
 
     // Atualizar o resultado da análise no armazenamento de conversas
     updateAnalysisResult(data.conversationId, analysisResult)
 
-    return new NextResponse(
-      JSON.stringify({
+    return NextResponse.json(
+      {
         success: true,
         conversationId: data.conversationId,
         result: analysisResult,
-      }),
+      },
       { headers },
     )
   } catch (error) {
     console.error("Erro ao processar resultado da análise:", error)
     // Garantir que mesmo em caso de erro, retornamos JSON
-    return new NextResponse(JSON.stringify({ error: "Erro interno do servidor" }), {
-      status: 500,
-      headers: {
-        "Content-Type": "application/json",
-        "Cache-Control": "no-cache, no-store, must-revalidate",
-        Pragma: "no-cache",
-        Expires: "0",
+    return NextResponse.json(
+      { error: "Erro interno do servidor" },
+      {
+        status: 500,
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
       },
-    })
+    )
   }
 }

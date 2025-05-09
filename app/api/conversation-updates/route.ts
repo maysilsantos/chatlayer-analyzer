@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server"
 import type { Message } from "@/context/app-state-context"
+import { getMockConversation, getMockAnalysisResult } from "@/lib/mock-conversation"
 
 // Tempo de expiração em milissegundos (5 minutos por padrão)
 const EXPIRATION_TIME = 5 * 60 * 1000
@@ -63,40 +64,57 @@ export async function GET(request: NextRequest) {
     const checkAnalysis = url.searchParams.get("checkAnalysis") === "true"
 
     if (!conversationId) {
-      return new NextResponse(JSON.stringify({ error: "conversationId is required as query parameter" }), {
-        status: 400,
-        headers,
-      })
+      return NextResponse.json({ error: "conversationId is required as query parameter" }, { status: 400, headers })
     }
 
-    // Retornar a conversa específica ou um array vazio se não existir
-    const conversation = conversations[conversationId]
+    // Inicializar a conversa se não existir
+    if (!conversations[conversationId]) {
+      conversations[conversationId] = {
+        messages: [],
+        lastUpdated: Date.now(),
+      }
+    }
 
+    // Usar dados mockados em vez de dados reais
     if (checkAnalysis) {
       // Se estamos verificando a análise, retornar informações sobre a análise
-      return new NextResponse(
-        JSON.stringify({
-          analysisCompleted: conversation?.analysisCompleted || false,
-          analysisResult: conversation?.analysisResult || "",
-        }),
+      return NextResponse.json(
+        {
+          analysisCompleted: true,
+          analysisResult: getMockAnalysisResult(),
+        },
         { headers },
       )
     } else {
-      // Caso contrário, retornar as mensagens da conversa
-      return new NextResponse(JSON.stringify(conversation ? conversation.messages : []), { headers })
+      // Retornar a conversa mockada
+      const mockMessages = getMockConversation(conversationId)
+
+      // Simular carregamento progressivo das mensagens
+      // Calcular quantas mensagens mostrar com base no tempo desde a criação da conversa
+      const conversation = conversations[conversationId]
+      const now = Date.now()
+      const timeElapsed = conversation ? now - conversation.lastUpdated : 0
+
+      // Mostrar uma nova mensagem a cada 2 segundos (aproximadamente)
+      const messagesToShow = Math.min(mockMessages.length, Math.floor(timeElapsed / 2000) + 1)
+
+      return NextResponse.json(mockMessages.slice(0, messagesToShow), { headers })
     }
   } catch (error) {
     console.error("Error processing GET request:", error)
     // Garantir que mesmo em caso de erro, retornamos JSON
-    return new NextResponse(JSON.stringify({ error: "Invalid request format" }), {
-      status: 400,
-      headers: {
-        "Content-Type": "application/json",
-        "Cache-Control": "no-cache, no-store, must-revalidate",
-        Pragma: "no-cache",
-        Expires: "0",
+    return NextResponse.json(
+      { error: "Invalid request format" },
+      {
+        status: 400,
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
       },
-    })
+    )
   }
 }
 
@@ -114,59 +132,45 @@ export async function POST(request: Request) {
     const data = await request.json()
 
     // Validar os dados
-    if (!data.message || !data.actor || !data.conversationId) {
-      return new NextResponse(
-        JSON.stringify({
-          error: "Message, actor, and conversationId are required",
-        }),
-        { status: 400, headers },
-      )
+    if (!data.conversationId) {
+      return NextResponse.json({ error: "conversationId is required" }, { status: 400, headers })
     }
 
-    // Criar uma nova mensagem
-    const newMessage: Message = {
-      actor: data.actor,
-      text: data.message,
-      quickReplies: data.quickReplies || [],
-      imageUrl: data.imageUrl,
-    }
-
-    // Inicializar o objeto de conversa para este conversationId se não existir
+    // Inicializar ou atualizar o objeto de conversa para este conversationId
     if (!conversations[data.conversationId]) {
       conversations[data.conversationId] = {
         messages: [],
         lastUpdated: Date.now(),
       }
+    } else {
+      // Apenas atualizar o timestamp
+      conversations[data.conversationId].lastUpdated = Date.now()
     }
 
-    // Simplesmente adicionar a mensagem à conversa - sem verificação de duplicatas
-    // para garantir que todas as mensagens sejam enfileiradas
-    conversations[data.conversationId].messages.push(newMessage)
-
-    // Atualizar o timestamp
-    conversations[data.conversationId].lastUpdated = Date.now()
-
-    return new NextResponse(
-      JSON.stringify({
+    // Retornar sucesso - não adicionamos mensagens reais, usamos o mock
+    return NextResponse.json(
+      {
         success: true,
-        message: "Message added to conversation",
-        conversation: conversations[data.conversationId].messages,
+        message: "Conversation updated",
         expiresAt: new Date(conversations[data.conversationId].lastUpdated + EXPIRATION_TIME).toISOString(),
-      }),
+      },
       { headers },
     )
   } catch (error) {
     console.error("Error updating conversation:", error)
     // Garantir que mesmo em caso de erro, retornamos JSON
-    return new NextResponse(JSON.stringify({ error: "Internal server error" }), {
-      status: 500,
-      headers: {
-        "Content-Type": "application/json",
-        "Cache-Control": "no-cache, no-store, must-revalidate",
-        Pragma: "no-cache",
-        Expires: "0",
+    return NextResponse.json(
+      { error: "Internal server error" },
+      {
+        status: 500,
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
       },
-    })
+    )
   }
 }
 
@@ -185,46 +189,39 @@ export async function DELETE(request: Request) {
     const conversationId = url.searchParams.get("conversationId")
 
     if (!conversationId) {
-      return new NextResponse(JSON.stringify({ error: "conversationId is required as query parameter" }), {
-        status: 400,
-        headers,
-      })
+      return NextResponse.json({ error: "conversationId is required as query parameter" }, { status: 400, headers })
     }
 
-    // Limpar a conversa específica
-    if (conversations[conversationId]) {
-      // Limpar completamente a conversa
-      conversations[conversationId].messages = []
-      conversations[conversationId].lastUpdated = Date.now()
-      conversations[conversationId].analysisCompleted = false
-      conversations[conversationId].analysisResult = ""
-    } else {
-      // Se a conversa não existir, criar uma nova vazia
-      conversations[conversationId] = {
-        messages: [],
-        lastUpdated: Date.now(),
-      }
+    // Resetar a conversa específica
+    conversations[conversationId] = {
+      messages: [],
+      lastUpdated: Date.now(),
+      analysisCompleted: false,
+      analysisResult: "",
     }
 
-    return new NextResponse(
-      JSON.stringify({
+    return NextResponse.json(
+      {
         success: true,
         message: `Conversation ${conversationId} cleared`,
-      }),
+      },
       { headers },
     )
   } catch (error) {
     console.error("Error processing DELETE request:", error)
     // Garantir que mesmo em caso de erro, retornamos JSON
-    return new NextResponse(JSON.stringify({ error: "Invalid request format" }), {
-      status: 400,
-      headers: {
-        "Content-Type": "application/json",
-        "Cache-Control": "no-cache, no-store, must-revalidate",
-        Pragma: "no-cache",
-        Expires: "0",
+    return NextResponse.json(
+      { error: "Invalid request format" },
+      {
+        status: 400,
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
       },
-    })
+    )
   }
 }
 
@@ -256,19 +253,22 @@ export async function OPTIONS(request: Request) {
       cleanedInLastRun: cleanedCount,
     }
 
-    return new NextResponse(JSON.stringify(stats), { headers })
+    return NextResponse.json(stats, { headers })
   } catch (error) {
     console.error("Error processing OPTIONS request:", error)
     // Garantir que mesmo em caso de erro, retornamos JSON
-    return new NextResponse(JSON.stringify({ error: "Error getting statistics" }), {
-      status: 500,
-      headers: {
-        "Content-Type": "application/json",
-        "Cache-Control": "no-cache, no-store, must-revalidate",
-        Pragma: "no-cache",
-        Expires: "0",
+    return NextResponse.json(
+      { error: "Error getting statistics" },
+      {
+        status: 500,
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
       },
-    })
+    )
   }
 }
 
