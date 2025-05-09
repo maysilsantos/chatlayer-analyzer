@@ -180,7 +180,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (state.stage === "processing" && !analysisCheckInterval) {
       console.log("Starting analysis check interval")
-      const interval = setInterval(checkAnalysisResult, 1000) // Verificar a cada 3 segundos
+      const interval = setInterval(checkAnalysisResult, 5000) // Verificar a cada 3 segundos
       setAnalysisCheckInterval(interval)
     } else if (state.stage !== "processing" && analysisCheckInterval) {
       console.log("Stopping analysis check interval")
