@@ -109,7 +109,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       // Adicionar um parâmetro de timestamp para evitar cache
       const timestamp = Date.now()
       const response = await fetch(
-        `/api/conversation-updates?conversationId=${state.conversationId}&checkAnalysis=true&_=${timestamp}`,
+        `/api/conversation-updates?conversationId=${state.conversationId}`,
         {
           // Adicionar cabeçalhos para evitar cache
           headers: {
