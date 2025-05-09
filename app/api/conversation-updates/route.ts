@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server"
 import type { Message } from "@/context/app-state-context"
 
 // Tempo de expiração em milissegundos (5 minutos por padrão)
-const EXPIRATION_TIME = 5 * 60 * 1000
+const EXPIRATION_TIME = 60 * 60 * 1000
 
 // Estrutura para armazenar conversas com timestamp
 interface ConversationData {
@@ -140,9 +140,11 @@ export async function POST(request: Request) {
     }
 
     // Verificar se a mensagem já existe para evitar duplicatas
-    const isDuplicate = conversations[data.conversationId].messages.some(
-      (msg) => msg.text === newMessage.text && msg.actor === newMessage.actor,
-    )
+    // const isDuplicate = conversations[data.conversationId].messages.some(
+    //   (msg) => msg.text === newMessage.text && msg.actor === newMessage.actor,
+    // )
+
+    const isDuplicate = false;
 
     if (!isDuplicate) {
       // Adicionar a mensagem à conversa específica
@@ -257,7 +259,7 @@ export async function OPTIONS(request: Request) {
     const stats = {
       totalConversations,
       oldestConversation: oldestConversation ? new Date(oldestConversation).toISOString() : null,
-      expirationTimeHours: EXPIRATION_TIME / (60 * 60 * 1000),
+      expirationTimeHours: EXPIRATION_TIME / (5 * 60 * 1000),
       cleanedInLastRun: cleanedCount,
     }
 
