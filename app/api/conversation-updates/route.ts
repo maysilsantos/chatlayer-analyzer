@@ -240,7 +240,7 @@ export async function OPTIONS(request: Request) {
     const stats = {
       totalConversations,
       oldestConversation: oldestConversation ? new Date(oldestConversation).toISOString() : null,
-      expirationTimeHours: EXPIRATION_TIME / (2* 60 * 1000),
+      expirationTimeHours: EXPIRATION_TIME / (10 * 60 * 1000),
       cleanedInLastRun: cleanedCount,
     }
 
