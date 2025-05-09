@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useRef, useEffect, useState } from "react"
+import { useRef, useEffect } from "react"
 import Image from "next/image"
 import type { Message } from "@/context/app-state-context"
 import { Check, Calendar } from "lucide-react"
@@ -19,69 +19,29 @@ const iconMap: Record<string, React.ReactNode> = {
 
 export default function ConversationPreview({ conversation }: ConversationPreviewProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
-  // Manter um estado local estável das mensagens
-  const [stableConversation, setStableConversation] = useState<Message[]>([])
-
-  // Atualizar o estado local apenas quando novas mensagens forem adicionadas
-  useEffect(() => {
-    if (conversation.length > 0) {
-      // Verificar se há novas mensagens para adicionar
-      const newMessages = conversation.filter(
-        (msg, index) =>
-          // Verificar se a mensagem já existe no stableConversation
-          !stableConversation.some(
-            (stableMsg, stableIndex) =>
-              stableMsg.text === msg.text && stableMsg.actor === msg.actor && stableIndex === index,
-          ),
-      )
-
-      if (newMessages.length > 0) {
-        console.log("Adicionando novas mensagens ao stableConversation:", newMessages)
-        // Apenas adicionar novas mensagens, não substituir tudo
-        setStableConversation((prev) => {
-          // Se o tamanho da conversa mudou drasticamente, pode ser uma nova conversa
-          if (Math.abs(prev.length - conversation.length) > 3) {
-            return conversation
-          }
-          // Caso contrário, manter as mensagens existentes e adicionar as novas
-          return [...prev, ...newMessages]
-        })
-      }
-    } else if (conversation.length === 0 && stableConversation.length > 0) {
-      // Limpar apenas se a conversa estiver vazia e tínhamos mensagens antes
-      // Isso indica uma mudança para uma nova conversa
-      setStableConversation([])
-    }
-  }, [conversation, stableConversation])
 
   // Rolar para o final quando novas mensagens forem adicionadas
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
     }
-  }, [stableConversation])
+  }, [conversation])
 
   // Adicionar log para depuração
   useEffect(() => {
-    console.log("ConversationPreview rendering with stable messages:", stableConversation)
-  }, [stableConversation])
-
-  // Usar stableConversation em vez de conversation
-  const displayConversation = stableConversation.length > 0 ? stableConversation : conversation
+    console.log("ConversationPreview rendering with messages:", conversation)
+  }, [conversation])
 
   return (
     <div ref={scrollRef} className="bg-cream-50 rounded-md h-[400px] overflow-y-auto p-4 border border-gray-200">
-      {displayConversation.length === 0 ? (
+      {conversation.length === 0 ? (
         <div className="h-full flex items-center justify-center text-gray-400">
           Waiting for conversation to begin...
         </div>
       ) : (
         <div className="space-y-4">
-          {displayConversation.map((message, index) => (
-            <div
-              key={`msg-${index}-${message.actor}-${message.text.substring(0, 10)}`}
-              className={`flex ${message.actor === "user" ? "justify-end" : "justify-start"}`}
-            >
+          {conversation.map((message, index) => (
+            <div key={index} className={`flex ${message.actor === "user" ? "justify-end" : "justify-start"}`}>
               <div
                 className={`max-w-[80%] rounded-lg p-3 ${
                   message.actor === "user" ? "bg-gray-100 text-gray-800" : "bg-blue-100 text-blue-800"

@@ -100,7 +100,6 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [analysisCheckInterval, setAnalysisCheckInterval] = useState<NodeJS.Timeout | null>(null)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
   const [apiErrorCount, setApiErrorCount] = useState(0)
-  const [isFirstLoad, setIsFirstLoad] = useState(true)
 
   // Função para verificar se há um resultado de análise
   const checkAnalysisResult = useCallback(async () => {
@@ -180,7 +179,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (state.stage === "processing" && !analysisCheckInterval) {
       console.log("Starting analysis check interval")
-      const interval = setInterval(checkAnalysisResult, 5000) // Verificar a cada 3 segundos
+      const interval = setInterval(checkAnalysisResult, 3000) // Verificar a cada 3 segundos
       setAnalysisCheckInterval(interval)
     } else if (state.stage !== "processing" && analysisCheckInterval) {
       console.log("Stopping analysis check interval")
@@ -234,18 +233,12 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
       console.log(`Received ${messages.length} messages:`, messages)
 
-      // Atualizar o estado apenas se houver novas mensagens
-      setState((prev) => {
-        // Verificar se há novas mensagens
-        if (JSON.stringify(prev.conversation) !== JSON.stringify(messages)) {
-          return {
-            ...prev,
-            conversation: messages,
-            lastUpdated: Date.now(),
-          }
-        }
-        return prev
-      })
+      // Sempre atualizar o estado com as mensagens recebidas
+      setState((prev) => ({
+        ...prev,
+        conversation: messages,
+        lastUpdated: Date.now(),
+      }))
 
       // Resetar o timeout quando receber atualizações
       if (timeoutRef.current) {
@@ -375,14 +368,6 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       fetchConversationUpdates()
     }
   }, [state.conversationId, fetchConversationUpdates])
-
-  // Efeito para inicialização
-  useEffect(() => {
-    if (isFirstLoad) {
-      console.log("First load, initializing with conversation ID:", state.conversationId)
-      setIsFirstLoad(false)
-    }
-  }, [isFirstLoad, state.conversationId])
 
   const updateState = (newState: Partial<AppState>) => {
     setState((prev) => ({ ...prev, ...newState }))

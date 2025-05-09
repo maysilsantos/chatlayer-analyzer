@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server"
 import type { Message } from "@/context/app-state-context"
 
 // Tempo de expiração em milissegundos (5 minutos por padrão)
-const EXPIRATION_TIME = 60 * 60 * 1000
+const EXPIRATION_TIME = 5 * 60 * 1000
 
 // Estrutura para armazenar conversas com timestamp
 interface ConversationData {
@@ -139,24 +139,17 @@ export async function POST(request: Request) {
       }
     }
 
-    // Verificar se a mensagem já existe para evitar duplicatas
-    // const isDuplicate = conversations[data.conversationId].messages.some(
-    //   (msg) => msg.text === newMessage.text && msg.actor === newMessage.actor,
-    // )
+    // Simplesmente adicionar a mensagem à conversa - sem verificação de duplicatas
+    // para garantir que todas as mensagens sejam enfileiradas
+    conversations[data.conversationId].messages.push(newMessage)
 
-    const isDuplicate = false;
-
-    if (!isDuplicate) {
-      // Adicionar a mensagem à conversa específica
-      conversations[data.conversationId].messages.push(newMessage)
-      // Atualizar o timestamp
-      conversations[data.conversationId].lastUpdated = Date.now()
-    }
+    // Atualizar o timestamp
+    conversations[data.conversationId].lastUpdated = Date.now()
 
     return new NextResponse(
       JSON.stringify({
         success: true,
-        message: isDuplicate ? "Message already exists" : "Message added to conversation",
+        message: "Message added to conversation",
         conversation: conversations[data.conversationId].messages,
         expiresAt: new Date(conversations[data.conversationId].lastUpdated + EXPIRATION_TIME).toISOString(),
       }),
@@ -200,7 +193,7 @@ export async function DELETE(request: Request) {
 
     // Limpar a conversa específica
     if (conversations[conversationId]) {
-      // Manter o objeto da conversa, mas limpar as mensagens
+      // Limpar completamente a conversa
       conversations[conversationId].messages = []
       conversations[conversationId].lastUpdated = Date.now()
       conversations[conversationId].analysisCompleted = false
@@ -259,7 +252,7 @@ export async function OPTIONS(request: Request) {
     const stats = {
       totalConversations,
       oldestConversation: oldestConversation ? new Date(oldestConversation).toISOString() : null,
-      expirationTimeHours: EXPIRATION_TIME / (5 * 60 * 1000),
+      expirationTimeHours: EXPIRATION_TIME / (60 * 60 * 1000),
       cleanedInLastRun: cleanedCount,
     }
 
