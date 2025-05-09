@@ -100,6 +100,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [analysisCheckInterval, setAnalysisCheckInterval] = useState<NodeJS.Timeout | null>(null)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
   const [apiErrorCount, setApiErrorCount] = useState(0)
+  const [isFirstLoad, setIsFirstLoad] = useState(true)
 
   // Função para verificar se há um resultado de análise
   const checkAnalysisResult = useCallback(async () => {
@@ -109,8 +110,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       // Adicionar um parâmetro de timestamp para evitar cache
       const timestamp = Date.now()
       const response = await fetch(
-          //`api/conversation-updates?conversationId=${state.conversationId}&checkAnalysis=true&_=${timestamp}`,
-        `/api/conversation-updates?conversationId=${state.conversationId}`,
+        `/api/conversation-updates?conversationId=${state.conversationId}&checkAnalysis=true&_=${timestamp}`,
         {
           // Adicionar cabeçalhos para evitar cache
           headers: {
@@ -200,12 +200,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     if (!state.conversationId) return
 
     try {
-      console.log(`Fetching updates for conversation: ${state.conversationId} `)
+      console.log(`Fetching updates for conversation: ${state.conversationId}`)
 
       // Adicionar um parâmetro de timestamp para evitar cache
       const timestamp = Date.now()
-      //`/api/conversation-updates?conversationId=${state.conversationId}&checkAnalysis=true&_=${timestamp}`, {
-      const response = await fetch(`/api/conversation-updates?conversationId=${state.conversationId}`, {
+      const response = await fetch(`/api/conversation-updates?conversationId=${state.conversationId}&_=${timestamp}`, {
         // Adicionar cabeçalhos para evitar cache
         headers: {
           "Cache-Control": "no-cache, no-store, must-revalidate",
@@ -235,11 +234,18 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
       console.log(`Received ${messages.length} messages:`, messages)
 
-      setState((prev) => ({
-        ...prev,
-        conversation: messages,
-        lastUpdated: Date.now(),
-      }))
+      // Atualizar o estado apenas se houver novas mensagens
+      setState((prev) => {
+        // Verificar se há novas mensagens
+        if (JSON.stringify(prev.conversation) !== JSON.stringify(messages)) {
+          return {
+            ...prev,
+            conversation: messages,
+            lastUpdated: Date.now(),
+          }
+        }
+        return prev
+      })
 
       // Resetar o timeout quando receber atualizações
       if (timeoutRef.current) {
@@ -370,6 +376,14 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     }
   }, [state.conversationId, fetchConversationUpdates])
 
+  // Efeito para inicialização
+  useEffect(() => {
+    if (isFirstLoad) {
+      console.log("First load, initializing with conversation ID:", state.conversationId)
+      setIsFirstLoad(false)
+    }
+  }, [isFirstLoad, state.conversationId])
+
   const updateState = (newState: Partial<AppState>) => {
     setState((prev) => ({ ...prev, ...newState }))
   }
@@ -436,9 +450,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      // NÃO gerar um novo ID de conversa, usar o existente
+      // Usar o ID de conversa existente - NÃO gerar um novo
       const currentConversationId = state.conversationId
-      console.log(`Starting analysis with existing conversation ID: ${currentConversationId}`)
+      console.log(`Starting analysis with conversation ID: ${currentConversationId}`)
 
       // Limpar mensagens da conversa no backend
       try {
@@ -454,8 +468,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       updateState({
         stage: "processing",
         isLoading: true,
-        conversation: [],
+        conversation: [], // Limpar conversa local
         analysisResult: "",
+        // NÃO atualizar o conversationId aqui
       })
 
       // Construir o objeto JSON conforme especificado
@@ -504,9 +519,6 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       }
 
       toast.success("Analysis started successfully!")
-
-      // Comentado: não adicionar mais mensagens de exemplo
-      // await addExampleMessages(currentConversationId)
     } catch (error) {
       console.error("Error starting analysis:", error)
       toast.error(`Error starting analysis: ${error instanceof Error ? error.message : "Unknown error"}`)
@@ -521,6 +533,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const resetAnalysis = () => {
     // Gerar um novo ID de conversa apenas quando resetar
     const newConversationId = generateConversationId()
+    console.log(`Resetting analysis with new conversation ID: ${newConversationId}`)
 
     // Manter as credenciais e descrições, mas resetar o resto
     setState((prev) => ({

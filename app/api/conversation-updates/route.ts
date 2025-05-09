@@ -139,15 +139,22 @@ export async function POST(request: Request) {
       }
     }
 
-    // Adicionar a mensagem à conversa específica
-    conversations[data.conversationId].messages.push(newMessage)
-    // Atualizar o timestamp
-    conversations[data.conversationId].lastUpdated = Date.now()
+    // Verificar se a mensagem já existe para evitar duplicatas
+    const isDuplicate = conversations[data.conversationId].messages.some(
+      (msg) => msg.text === newMessage.text && msg.actor === newMessage.actor,
+    )
+
+    if (!isDuplicate) {
+      // Adicionar a mensagem à conversa específica
+      conversations[data.conversationId].messages.push(newMessage)
+      // Atualizar o timestamp
+      conversations[data.conversationId].lastUpdated = Date.now()
+    }
 
     return new NextResponse(
       JSON.stringify({
         success: true,
-        message: "Message added to conversation",
+        message: isDuplicate ? "Message already exists" : "Message added to conversation",
         conversation: conversations[data.conversationId].messages,
         expiresAt: new Date(conversations[data.conversationId].lastUpdated + EXPIRATION_TIME).toISOString(),
       }),
@@ -191,7 +198,17 @@ export async function DELETE(request: Request) {
 
     // Limpar a conversa específica
     if (conversations[conversationId]) {
-      delete conversations[conversationId]
+      // Manter o objeto da conversa, mas limpar as mensagens
+      conversations[conversationId].messages = []
+      conversations[conversationId].lastUpdated = Date.now()
+      conversations[conversationId].analysisCompleted = false
+      conversations[conversationId].analysisResult = ""
+    } else {
+      // Se a conversa não existir, criar uma nova vazia
+      conversations[conversationId] = {
+        messages: [],
+        lastUpdated: Date.now(),
+      }
     }
 
     return new NextResponse(
@@ -240,7 +257,7 @@ export async function OPTIONS(request: Request) {
     const stats = {
       totalConversations,
       oldestConversation: oldestConversation ? new Date(oldestConversation).toISOString() : null,
-      expirationTimeHours: EXPIRATION_TIME / (10 * 60 * 1000),
+      expirationTimeHours: EXPIRATION_TIME / (60 * 60 * 1000),
       cleanedInLastRun: cleanedCount,
     }
 

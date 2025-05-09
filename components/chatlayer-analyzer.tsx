@@ -16,6 +16,7 @@ export default function ChatlayerAnalyzer() {
   const { state, updateState, startAnalysis, resetAnalysis, fetchConversationUpdates, submitAnalysisResult } =
     useAppState()
   const [expirationInfo, setExpirationInfo] = useState<string | null>(null)
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
   const handleStartAnalysis = async () => {
     // Limpar explicitamente o histórico de conversas antes de iniciar
@@ -33,15 +34,20 @@ export default function ChatlayerAnalyzer() {
   // Função para simular o envio de um resultado de análise
   const handleSimulateAnalysisResult = async () => {
     try {
+      console.log(`Simulando resultado para conversationId: ${state.conversationId}`)
+
       const response = await fetch("/api/get-analysis-result", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
         },
         body: JSON.stringify({
           conversationId: state.conversationId,
           result: `
-## Análise Simulada da Conversa
+## Análise Simulada da Conversa (ID: ${state.conversationId})
 
 ### Pontos Fortes:
 - Resposta rápida às solicitações do usuário
@@ -77,14 +83,34 @@ export default function ChatlayerAnalyzer() {
     try {
       const response = await fetch("/api/conversation-updates", {
         method: "OPTIONS",
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
       })
 
       if (response.ok) {
-        const data = await response.json()
-        setExpirationInfo(`Conversas expiram após ${data.expirationTimeHours} horas de inatividade`)
+        const contentType = response.headers.get("content-type")
+        if (contentType && contentType.includes("application/json")) {
+          const data = await response.json()
+          setExpirationInfo(`Conversas expiram após ${data.expirationTimeHours} horas de inatividade`)
+        }
       }
     } catch (error) {
       console.error("Erro ao buscar informações de expiração:", error)
+    }
+  }
+
+  // Função para atualizar manualmente as conversas
+  const handleRefreshConversation = async () => {
+    setIsRefreshing(true)
+    try {
+      await fetchConversationUpdates()
+    } catch (error) {
+      console.error("Erro ao atualizar conversas:", error)
+    } finally {
+      setIsRefreshing(false)
     }
   }
 
@@ -271,9 +297,15 @@ export default function ChatlayerAnalyzer() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-lg">Conversation Interaction Preview</CardTitle>
-              <Button variant="outline" size="sm" onClick={() => fetchConversationUpdates()} className="h-8 px-2">
-                <RefreshCw className="h-4 w-4 mr-1" />
-                Refresh
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefreshConversation}
+                className="h-8 px-2"
+                disabled={isRefreshing}
+              >
+                <RefreshCw className={`h-4 w-4 mr-1 ${isRefreshing ? "animate-spin" : ""}`} />
+                {isRefreshing ? "Refreshing..." : "Refresh"}
               </Button>
             </CardHeader>
             <CardContent>
@@ -286,8 +318,13 @@ export default function ChatlayerAnalyzer() {
 
           {/* Resultado da análise */}
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-lg">Conversation Analysis and improvement suggestions</CardTitle>
+              {state.stage === "finished" && (
+                <Button variant="outline" size="sm" onClick={resetAnalysis} className="h-8 px-2">
+                  New Analysis
+                </Button>
+              )}
             </CardHeader>
             <CardContent>
               <AnalysisResult stage={state.stage} result={state.analysisResult} />
